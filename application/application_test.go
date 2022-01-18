@@ -46,9 +46,20 @@ func TestAddNodes(t *testing.T) {
 }
 
 func TestAddDependency(t *testing.T) {
-	AddNode("four", "4")
-	AddNode("five", "5")
-	AddNode("six", "6")
+	_, err := AddNode("four", "4")
+	if err != nil {
+		t.Errorf("node cant be added")
+	}
+	_, err = AddNode("five", "5")
+	if err != nil {
+		t.Errorf("node cant be added")
+	}
+	_, err = AddNode("six", "6")
+
+	if err != nil {
+		t.Errorf("node cant be added")
+	}
+
 	var test = []struct {
 		testname string
 		pid      string
@@ -107,12 +118,27 @@ func checkEqual(d1, d2 []data) bool {
 	return reflect.DeepEqual(ids1, ids2)
 }
 func TestCheckAscendentsAndDescendents(t *testing.T) {
-	AddNode("eight", "8")
-	AddNode("nine", "9")
-	AddNode("ten", "10")
+	_, err := AddNode("eight", "8")
+	if err != nil {
+		t.Errorf("node cant be added")
+	}
+	_, err = AddNode("nine", "9")
+	if err != nil {
+		t.Errorf("node cant be added")
+	}
+	_, err = AddNode("ten", "10")
+	if err != nil {
+		t.Errorf("node cant be added")
+	}
 
-	AddDependency("8", "9")
-	AddDependency("9", "10")
+	_, err = AddDependency("8", "9")
+	if err != nil {
+		t.Errorf("depend cant be added")
+	}
+	_, err = AddDependency("9", "10")
+	if err != nil {
+		t.Errorf("depend cant be added")
+	}
 
 	n, _ := mygraph.GetNode("8")
 	mp8 := ParseNodes(n)[0]
@@ -158,10 +184,10 @@ func TestCheckAscendentsAndDescendents(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		gotasc, err := Ancestors(tt.id)
+		gotasc, err1 := Ancestors(tt.id)
 		gotdsc, err := Descendants(tt.id)
 
-		if err != tt.err {
+		if err1 != tt.err && err != tt.err {
 			t.Errorf("not got right result exp:%v got:%v", err, tt.err)
 		}
 

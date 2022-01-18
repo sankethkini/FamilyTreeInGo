@@ -147,7 +147,7 @@ func DeleteNode(id string) []data {
 		val.RemoveChild(curnode)
 		val.RemoveParent(curnode)
 	}
-	ok = mygraph.RemoveNode(id)
+	mygraph.RemoveNode(id)
 
 	msg := createMsg("message", "node deleted successfuly")
 	return msg
