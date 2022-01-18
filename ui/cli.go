@@ -23,7 +23,6 @@ func MenuForUser() {
 	var option int
 	fmt.Scanf("%d", &option)
 	selectApi(option)
-	MenuForUser()
 }
 
 func selectApi(option int) {
