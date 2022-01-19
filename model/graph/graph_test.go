@@ -52,7 +52,7 @@ func TestRemoveGraph(t *testing.T) {
 			want:     true,
 		},
 		{
-			testname: "remove node from graph",
+			testname: "remove node from graph which not exits",
 			id:       "1",
 			name:     "one",
 			want:     false,

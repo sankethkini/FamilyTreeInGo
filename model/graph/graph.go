@@ -9,8 +9,8 @@ type Graph struct {
 }
 
 func (g *Graph) AddNode(id, name string) *node.Node {
-	newnode := node.NewNode(id, name)
-	g.Nodes[id] = newnode
+	nd := node.NewNode(id, name)
+	g.Nodes[id] = nd
 	return g.Nodes[id]
 }
 
