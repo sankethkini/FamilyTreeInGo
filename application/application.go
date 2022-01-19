@@ -13,6 +13,7 @@ var mygraph *graph.Graph
 //aliasing
 type data = map[string]interface{}
 
+//initializing graph
 func init() {
 	mygraph = graph.NewGraph()
 }
@@ -25,6 +26,7 @@ func createMsg(msg string, body interface{}) []data {
 	return retmsg
 }
 
+//parse nodes to represnt in form of message
 func ParseNodes(nd ...*node.Node) []data {
 	var retmsg []data
 	for _, val := range nd {
@@ -36,11 +38,12 @@ func ParseNodes(nd ...*node.Node) []data {
 	return retmsg
 }
 
+//AddNode functionality adds node to the graph
 func AddNode(name, id string) ([]data, error) {
 	_, ok := mygraph.GetNode(id)
 
 	if ok {
-		return nil, fmt.Errorf("node already exists %w", NodeExists)
+		return nil, fmt.Errorf("node cannot be added %w", NodeExistsErr)
 	}
 	mygraph.AddNode(id, name)
 
@@ -48,39 +51,42 @@ func AddNode(name, id string) ([]data, error) {
 	return msg, nil
 }
 
+//Parents function returns the parents of a node
 func Parents(id string) ([]data, error) {
 	curnode, ok := mygraph.GetNode(id)
 
 	if !ok {
-		return nil, fmt.Errorf("node does not exists %w", NodeNotFound)
+		return nil, fmt.Errorf("cannot find parents %w", NodeNotFoundErr)
 	}
-	parents := curnode.GetParents()
-	msg := ParseNodes(parents...)
+	par := curnode.GetParents()
+	msg := ParseNodes(par...)
 	return msg, nil
 }
 
+//Children function returns the children of a node
 func Children(id string) ([]data, error) {
 	curnode, ok := mygraph.GetNode(id)
 
 	if !ok {
-		return nil, fmt.Errorf("node does not exists %w", NodeNotFound)
+		return nil, fmt.Errorf("cannot find children %w", NodeNotFoundErr)
 	}
-	children := curnode.GetChildren()
-	msg := ParseNodes(children...)
+	chd := curnode.GetChildren()
+	msg := ParseNodes(chd...)
 	return msg, nil
 }
 
+//Ancestors function returns the ancestors of a node
 func Ancestors(id string) ([]data, error) {
 	curnode, ok := mygraph.GetNode(id)
 
 	if !ok {
-		return nil, fmt.Errorf("node does not exists %w", NodeNotFound)
+		return nil, fmt.Errorf("cannot find ancestors %w", NodeNotFoundErr)
 	}
 
-	parents := curnode.GetParents()
+	par := curnode.GetParents()
 	visited := make(map[string]bool)
 	var res []*node.Node
-	for _, val := range parents {
+	for _, val := range par {
 		getAncestors(val, visited, &res)
 	}
 
@@ -88,14 +94,15 @@ func Ancestors(id string) ([]data, error) {
 	return msg, nil
 }
 
+//helper dfs to find all ancestors
 func getAncestors(cur *node.Node, visited map[string]bool, res *[]*node.Node) {
 	if visited[cur.Id] {
 		return
 	}
 	visited[cur.Id] = true
 	*res = append(*res, cur)
-	parents := cur.GetParents()
-	for _, val := range parents {
+	par := cur.GetParents()
+	for _, val := range par {
 		if !visited[val.Id] {
 			getAncestors(val, visited, res)
 		}
@@ -103,16 +110,17 @@ func getAncestors(cur *node.Node, visited map[string]bool, res *[]*node.Node) {
 
 }
 
+//Descendants function returns descendants of a node
 func Descendants(id string) ([]data, error) {
 	curnode, ok := mygraph.GetNode(id)
 	if !ok {
-		return nil, fmt.Errorf("node does not exists %w", NodeNotFound)
+		return nil, fmt.Errorf("cannot find descendants %w", NodeNotFoundErr)
 	}
 
-	children := curnode.GetChildren()
+	chd := curnode.GetChildren()
 	visited := make(map[string]bool)
 	var res []*node.Node
-	for _, val := range children {
+	for _, val := range chd {
 		getDescendants(val, visited, &res)
 	}
 
@@ -120,6 +128,7 @@ func Descendants(id string) ([]data, error) {
 	return msg, nil
 }
 
+//helper dfs to find descendants
 func getDescendants(cur *node.Node, visited map[string]bool, res *[]*node.Node) {
 	if visited[cur.Id] {
 		return
@@ -135,6 +144,7 @@ func getDescendants(cur *node.Node, visited map[string]bool, res *[]*node.Node) 
 
 }
 
+//DeleteNode function deletes the node
 func DeleteNode(id string) []data {
 	curnode, ok := mygraph.GetNode(id)
 
@@ -153,61 +163,64 @@ func DeleteNode(id string) []data {
 	return msg
 }
 
-func DeleteDependency(parentid string, childid string) []data {
-	parentnode, ok := mygraph.GetNode(parentid)
+//DeleteDependency function deletes dependency between two nodes
+func DeleteDependency(parentId string, childId string) []data {
+	parentNode, ok := mygraph.GetNode(parentId)
 
 	if !ok {
 		msg := createMsg("message", "parent node does not exists")
 		return msg
 	}
 
-	childnode, ok := mygraph.GetNode(childid)
+	childNode, ok := mygraph.GetNode(childId)
 
 	if !ok {
 		msg := createMsg("message", "child node does not exists")
 		return msg
 	}
 
-	parentnode.RemoveChild(childnode)
-	childnode.RemoveParent(parentnode)
+	parentNode.RemoveChild(childNode)
+	childNode.RemoveParent(parentNode)
 
 	msg := createMsg("message", "dependency deleted successfuly")
 	return msg
 }
 
-func checkCycle(parentid, childid string) bool {
-	parentnode, _ := mygraph.GetNode(parentid)
+//to check if cycle exists by checking if childnode is in the ancestors of parent node
+func checkCycle(parentId, childId string) bool {
+	pnode, _ := mygraph.GetNode(parentId)
 	visited := make(map[string]bool)
 	var res []*node.Node
-	getAncestors(parentnode, visited, &res)
+	getAncestors(pnode, visited, &res)
 
 	for _, val := range res {
-		if val.Id == childid {
+		if val.Id == childId {
 			return true
 		}
 	}
 	return false
 }
 
-func AddDependency(parentid, childid string) ([]data, error) {
-	parentnode, ok := mygraph.GetNode(parentid)
+//AddDependency function add dependency between two nodes
+func AddDependency(parentId, childId string) ([]data, error) {
+	parentNode, ok := mygraph.GetNode(parentId)
 
 	if !ok {
-		return nil, fmt.Errorf("parent node does not exists %w", NodeNotFound)
+		return nil, fmt.Errorf("cannot add dependency %w", NodeNotFoundErr)
 	}
 
-	childnode, ok := mygraph.GetNode(childid)
+	childNode, ok := mygraph.GetNode(childId)
 
 	if !ok {
-		return nil, fmt.Errorf("child node does not exists %w", NodeNotFound)
+		return nil, fmt.Errorf("cannot add dependency %w", NodeNotFoundErr)
 	}
 
-	if checkCycle(parentid, childid) {
-		return nil, fmt.Errorf("cannot add dependency %w", CyclicDependency)
+	if checkCycle(parentId, childId) {
+		return nil, fmt.Errorf("cannot add dependency %w", CyclicDependencyErr)
 	}
 
-	parentnode.AddChild(childnode)
-	childnode.AddParent(parentnode)
+	parentNode.AddChild(childNode)
+	childNode.AddParent(parentNode)
 
 	msg := createMsg("message", "dependency added successfuly")
 	return msg, nil

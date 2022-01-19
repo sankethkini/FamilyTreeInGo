@@ -2,6 +2,8 @@ package application
 
 import "errors"
 
-var NodeNotFound = errors.New("node not found")
-var CyclicDependency = errors.New("cyclic dependency")
-var NodeExists = errors.New("node with same id")
+var (
+	NodeNotFoundErr     = errors.New("node not found")
+	CyclicDependencyErr = errors.New("cyclic dependency")
+	NodeExistsErr       = errors.New("node with same id")
+)
