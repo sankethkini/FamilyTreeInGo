@@ -74,11 +74,11 @@ func nodeIdInput() (id string) {
 	return
 }
 
-func dependencyInput() (parentid string, childid string) {
+func dependencyInput() (parentId string, childId string) {
 	fmt.Println("Enter the parent id")
-	fmt.Scanf("%s", &parentid)
+	fmt.Scanf("%s", &parentId)
 	fmt.Println("Enter the child id")
-	fmt.Scanf("%s", &childid)
+	fmt.Scanf("%s", &childId)
 	return
 }
 
@@ -97,8 +97,8 @@ func addNewNode() {
 }
 
 func addNewDependency() {
-	parentid, childid := dependencyInput()
-	msg, err := application.AddDependency(parentid, childid)
+	parentId, childId := dependencyInput()
+	msg, err := application.AddDependency(parentId, childId)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -112,8 +112,8 @@ func deleteNode() {
 }
 
 func deleteDependency() {
-	parentid, childid := dependencyInput()
-	msg := application.DeleteDependency(parentid, childid)
+	parentId, childId := dependencyInput()
+	msg := application.DeleteDependency(parentId, childId)
 	displayMessage(msg...)
 }
 
