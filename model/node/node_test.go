@@ -3,19 +3,19 @@ package node
 import "testing"
 
 type nodeargs struct {
-	n1 *Node
-	n2 *Node
+	n1 *node
+	n2 *node
 }
 
 type format struct {
 	name  string
 	args  nodeargs
 	want  bool
-	nodes []*Node
+	nodes []string
 }
 
-var node1 *Node = NewNode("1", "one")
-var node2 *Node = NewNode("2", "two")
+var node1 *node = NewNode("1", "one")
+var node2 *node = NewNode("2", "two")
 
 func TestAddChild(t *testing.T) {
 	var tests = []format{
@@ -23,13 +23,13 @@ func TestAddChild(t *testing.T) {
 			name:  "adding child",
 			args:  nodeargs{n1: node1, n2: node2},
 			want:  true,
-			nodes: []*Node{node2},
+			nodes: []string{"2"},
 		},
 		{
 			name:  "adding child that already exists",
 			args:  nodeargs{n1: node1, n2: node2},
 			want:  false,
-			nodes: []*Node{node2},
+			nodes: []string{"2"},
 		},
 	}
 	for _, tt := range tests {
@@ -40,7 +40,7 @@ func TestAddChild(t *testing.T) {
 			}
 			ngot := tt.args.n1.GetChildren()
 			for i, val := range ngot {
-				if val != tt.nodes[i] {
+				if val.GetId() != tt.nodes[i] {
 					t.Errorf("expected %v got %v", tt.want, ngot)
 				}
 			}
@@ -54,13 +54,13 @@ func TestAddParent(t *testing.T) {
 			name:  "adding parent",
 			args:  nodeargs{n1: node1, n2: node2},
 			want:  true,
-			nodes: []*Node{node2},
+			nodes: []string{"2"},
 		},
 		{
 			name:  "adding parent which already exists",
 			args:  nodeargs{n1: node1, n2: node2},
 			want:  false,
-			nodes: []*Node{node2},
+			nodes: []string{"2"},
 		},
 	}
 	for _, tt := range tests {
@@ -71,7 +71,7 @@ func TestAddParent(t *testing.T) {
 			}
 			ngot := tt.args.n1.GetParents()
 			for i, val := range ngot {
-				if val != tt.nodes[i] {
+				if val.GetId() != tt.nodes[i] {
 					t.Errorf("expected %v got %v", tt.want, ngot)
 				}
 			}
@@ -97,7 +97,7 @@ func TestRemoveChild(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := tt.args.n1.RemoveChild(tt.args.n2)
+			got := tt.args.n1.RemoveChild(tt.args.n2.Id)
 			if got != tt.want {
 				t.Errorf("expected %v got %v", tt.want, got)
 			}
@@ -123,7 +123,7 @@ func TestRemoveParent(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := tt.args.n1.RemoveParent(tt.args.n2)
+			got := tt.args.n1.RemoveParent(tt.args.n2.Id)
 			if got != tt.want {
 				t.Errorf("expected %v got %v", tt.want, got)
 			}
