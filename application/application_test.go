@@ -298,33 +298,48 @@ func TestDeleteDependency(t *testing.T) {
 		pid      string
 		cid      string
 		msg      string
+		wantErr  error
 	}{
 		{
 			testname: "node deleted",
 			pid:      "17",
 			cid:      "19",
 			msg:      "dependency deleted successfuly",
+			wantErr:  nil,
 		},
 		{
 			testname: "node does not exists",
 			pid:      "20",
 			cid:      "17",
 			msg:      "parent node does not exists",
+			wantErr:  fmt.Errorf("cannot remove dependency %w", NodeNotFoundErr),
 		},
 		{
 			testname: "node does not exists",
 			pid:      "17",
 			cid:      "27",
 			msg:      "child node does not exists",
+			wantErr:  fmt.Errorf("cannot remove dependency %w", NodeNotFoundErr),
 		},
 	}
 
 	for _, tt := range test {
 		t.Run(tt.testname, func(t *testing.T) {
-			got := DeleteDependency(tt.pid, tt.cid)
-			if got[0]["message"] != tt.msg {
-				t.Errorf("not deleted exp: %v got: %v", tt.msg, got)
+			got, err := DeleteDependency(tt.pid, tt.cid)
+			if tt.wantErr != nil {
+				if err == nil {
+					t.Errorf("exp %v got %v as error", tt.wantErr, err)
+				} else {
+					if tt.wantErr.Error() != err.Error() {
+						t.Errorf("exp %v got %v as error", tt.wantErr, err)
+					}
+				}
+			} else {
+				if got[0]["message"] != tt.msg {
+					t.Errorf("not deleted exp: %v got: %v", tt.msg, got)
+				}
 			}
+
 		})
 	}
 }
