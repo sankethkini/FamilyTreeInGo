@@ -1,83 +1,83 @@
 package node
 
 type INode interface {
-	AddChild(c INode) bool
-	AddParent(c INode) bool
+	AddChild(c *Node) bool
+	AddParent(c *Node) bool
 	RemoveChild(c string) bool
 	RemoveParent(c string) bool
-	GetParents() []INode
-	GetChildren() []INode
+	GetParents() []*Node
+	GetChildren() []*Node
 	GetId() string
 	GetName() string
 }
 
-type node struct {
-	Id       string
-	Name     string
-	Children map[string]INode
-	Parents  map[string]INode
+type Node struct {
+	id       string
+	name     string
+	children map[string]*Node
+	parents  map[string]*Node
 }
 
-func (n *node) AddChild(c INode) bool {
-	if _, ok := n.Children[c.GetId()]; ok {
+func (n *Node) AddChild(c *Node) bool {
+	if _, ok := n.children[c.GetId()]; ok {
 		return false
 	}
-	n.Children[c.GetId()] = c
+	n.children[c.GetId()] = c
 	return true
 }
 
-func (n *node) AddParent(c INode) bool {
-	if _, ok := n.Parents[c.GetId()]; ok {
+func (n *Node) AddParent(c *Node) bool {
+	if _, ok := n.parents[c.GetId()]; ok {
 		return false
 	}
-	n.Parents[c.GetId()] = c
+	n.parents[c.GetId()] = c
 	return true
 }
 
-func (n *node) RemoveChild(c string) bool {
-	if _, ok := n.Children[c]; !ok {
+func (n *Node) RemoveChild(c string) bool {
+	if _, ok := n.children[c]; !ok {
 		return false
 	}
-	delete(n.Children, c)
+	delete(n.children, c)
 	return true
 }
 
-func (n *node) RemoveParent(c string) bool {
-	if _, ok := n.Parents[c]; !ok {
+func (n *Node) RemoveParent(c string) bool {
+	if _, ok := n.parents[c]; !ok {
 		return false
 	}
-	delete(n.Parents, c)
+	delete(n.parents, c)
 	return true
 }
 
-func (n *node) GetParents() []INode {
-	var p []INode
-	for _, val := range n.Parents {
+func (n *Node) GetParents() []*Node {
+	var p []*Node
+	for _, val := range n.parents {
 		p = append(p, val)
 	}
 	return p
 }
 
-func (n *node) GetChildren() []INode {
-	var p []INode
-	for _, val := range n.Children {
+func (n *Node) GetChildren() []*Node {
+	var p []*Node
+	for _, val := range n.children {
 		p = append(p, val)
 	}
 	return p
 }
 
-func (n *node) GetId() string {
-	return n.Id
+func (n *Node) GetId() string {
+	return n.id
 }
-func (n *node) GetName() string {
-	return n.Name
+func (n *Node) GetName() string {
+	return n.name
 }
 
-func NewNode(id, name string) *node {
-	node := node{}
-	node.Id = id
-	node.Name = name
-	node.Children = make(map[string]INode)
-	node.Parents = make(map[string]INode)
+func NewNode(id, name string) *Node {
+	node := Node{}
+	node.id = id
+	node.name = name
+	node.children = make(map[string]*Node)
+	node.parents = make(map[string]*Node)
 	return &node
 }

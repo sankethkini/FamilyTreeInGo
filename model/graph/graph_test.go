@@ -11,7 +11,7 @@ type format struct {
 	testname string
 	id       string
 	name     string
-	res      node.INode
+	res      *node.Node
 	want     bool
 }
 
@@ -48,7 +48,7 @@ func TestRemoveGraph(t *testing.T) {
 		testname string
 		id       string
 		name     string
-		res      node.INode
+		res      *node.Node
 		want     error
 	}{
 		{
@@ -85,11 +85,11 @@ func TestAllNodes(t *testing.T) {
 
 	var tests = []struct {
 		testname string
-		nodes    []node.INode
+		nodes    []*node.Node
 	}{
 		{
 			testname: "add nodes",
-			nodes:    []node.INode{node1, node2},
+			nodes:    []*node.Node{node1, node2},
 		},
 	}
 
@@ -97,7 +97,7 @@ func TestAllNodes(t *testing.T) {
 		t.Run(tt.testname, func(t *testing.T) {
 			got := mygraph.AllNodes()
 
-			for i, _ := range got {
+			for i := range got {
 				if got[i] != tt.nodes[i] {
 					t.Errorf("incorrect exp:%v got:%v", tt.nodes, got)
 				}
@@ -114,8 +114,8 @@ func TestAddDep(t *testing.T) {
 
 	var tests = []struct {
 		testname string
-		parNodes []node.INode
-		chdNodes []node.INode
+		parNodes []*node.Node
+		chdNodes []*node.Node
 		parId    string
 		chdId    string
 		wantErr  error
@@ -124,24 +124,24 @@ func TestAddDep(t *testing.T) {
 			testname: "add dependency",
 			parId:    "1",
 			chdId:    "2",
-			parNodes: []node.INode{node1},
-			chdNodes: []node.INode{node2},
+			parNodes: []*node.Node{node1},
+			chdNodes: []*node.Node{node2},
 			wantErr:  nil,
 		},
 		{
 			testname: "add dependency parent node not exits",
 			parId:    "3",
 			chdId:    "2",
-			parNodes: []node.INode{},
-			chdNodes: []node.INode{},
+			parNodes: []*node.Node{},
+			chdNodes: []*node.Node{},
 			wantErr:  NodeNotFoundErr,
 		},
 		{
 			testname: "add dependency",
 			parId:    "1",
 			chdId:    "3",
-			parNodes: []node.INode{},
-			chdNodes: []node.INode{},
+			parNodes: []*node.Node{},
+			chdNodes: []*node.Node{},
 			wantErr:  NodeNotFoundErr,
 		},
 	}
@@ -165,12 +165,12 @@ func TestAddDep(t *testing.T) {
 			} else {
 				gotPar := node2.GetParents()
 				gotChd := node1.GetChildren()
-				for i, _ := range gotPar {
+				for i := range gotPar {
 					if gotPar[i] != tt.parNodes[i] {
 						t.Errorf("incorrect exp:%v got:%v", tt.parNodes, gotPar)
 					}
 				}
-				for i, _ := range gotChd {
+				for i := range gotChd {
 					if gotChd[i] != tt.chdNodes[i] {
 						t.Errorf("incorrect exp:%v got:%v", tt.chdNodes, gotChd)
 					}
@@ -187,38 +187,41 @@ func TestRemoveDep(t *testing.T) {
 	node1 := mygraph.AddNode("1", "1")
 	node2 := mygraph.AddNode("2", "2")
 
-	mygraph.AddDependency(node1.GetId(), node2.GetId())
+	err := mygraph.AddDependency(node1.GetId(), node2.GetId())
+	if err != nil {
+		t.Errorf("cannot add dependency %v", err)
+	}
 
 	var tests = []struct {
 		testname string
 		parId    string
 		chdId    string
-		parNodes []node.INode
-		chdNodes []node.INode
+		parNodes []*node.Node
+		chdNodes []*node.Node
 		wantErr  error
 	}{
 		{
 			testname: "remove dependency",
 			parId:    "1",
 			chdId:    "2",
-			parNodes: []node.INode{},
-			chdNodes: []node.INode{},
+			parNodes: []*node.Node{},
+			chdNodes: []*node.Node{},
 			wantErr:  nil,
 		},
 		{
 			testname: "remove dependency",
 			parId:    "3",
 			chdId:    "2",
-			parNodes: []node.INode{},
-			chdNodes: []node.INode{},
+			parNodes: []*node.Node{},
+			chdNodes: []*node.Node{},
 			wantErr:  NodeNotFoundErr,
 		},
 		{
 			testname: "remove dependency",
 			parId:    "1",
 			chdId:    "3",
-			parNodes: []node.INode{},
-			chdNodes: []node.INode{},
+			parNodes: []*node.Node{},
+			chdNodes: []*node.Node{},
 			wantErr:  NodeNotFoundErr,
 		},
 	}
@@ -242,12 +245,12 @@ func TestRemoveDep(t *testing.T) {
 			} else {
 				gotPar := node2.GetParents()
 				gotChd := node1.GetChildren()
-				for i, _ := range gotPar {
+				for i := range gotPar {
 					if gotPar[i] != tt.parNodes[i] {
 						t.Errorf("incorrect exp:%v got:%v", tt.parNodes, gotPar)
 					}
 				}
-				for i, _ := range gotChd {
+				for i := range gotChd {
 					if gotChd[i] != tt.chdNodes[i] {
 						t.Errorf("incorrect exp:%v got:%v", tt.chdNodes, gotChd)
 					}

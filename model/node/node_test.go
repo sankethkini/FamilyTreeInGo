@@ -3,8 +3,8 @@ package node
 import "testing"
 
 type nodeargs struct {
-	n1 *node
-	n2 *node
+	n1 *Node
+	n2 *Node
 }
 
 type format struct {
@@ -14,8 +14,8 @@ type format struct {
 	nodes []string
 }
 
-var node1 *node = NewNode("1", "one")
-var node2 *node = NewNode("2", "two")
+var node1 *Node = NewNode("1", "one")
+var node2 *Node = NewNode("2", "two")
 
 func TestAddChild(t *testing.T) {
 	var tests = []format{
@@ -97,7 +97,7 @@ func TestRemoveChild(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := tt.args.n1.RemoveChild(tt.args.n2.Id)
+			got := tt.args.n1.RemoveChild(tt.args.n2.GetId())
 			if got != tt.want {
 				t.Errorf("expected %v got %v", tt.want, got)
 			}
@@ -123,7 +123,7 @@ func TestRemoveParent(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := tt.args.n1.RemoveParent(tt.args.n2.Id)
+			got := tt.args.n1.RemoveParent(tt.args.n2.GetId())
 			if got != tt.want {
 				t.Errorf("expected %v got %v", tt.want, got)
 			}
