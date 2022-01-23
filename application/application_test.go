@@ -1,10 +1,11 @@
 package application
 
 import (
-	"fmt"
 	"reflect"
 	"sort"
 	"testing"
+
+	"github.com/pkg/errors"
 )
 
 func TestAddNodes(t *testing.T) {
@@ -26,7 +27,7 @@ func TestAddNodes(t *testing.T) {
 			testname: "adding node which exists",
 			name:     "one",
 			id:       "1",
-			experr:   fmt.Errorf("node already exists %w", NodeExistsErr),
+			experr:   NodeExistsErr,
 			wantErr:  true,
 		},
 	}
@@ -37,7 +38,7 @@ func TestAddNodes(t *testing.T) {
 
 			if tt.wantErr && got == nil {
 				t.Errorf("not got any error exp:%v got %v", tt.experr, got)
-				if tt.experr.Error() != got.Error() {
+				if tt.experr.Error() != errors.Cause(got).Error() {
 					t.Errorf("node not added properly exp: %v got: %v", tt.experr, got)
 				}
 			}
@@ -78,14 +79,14 @@ func TestAddDependency(t *testing.T) {
 			testname: "parent node not exits",
 			pid:      "10",
 			cid:      "5",
-			experr:   fmt.Errorf("parent node does not exists %w", NodeNotFoundErr),
+			experr:   NodeNotFoundErr,
 			wantErr:  true,
 		},
 		{
 			testname: "cyclic dependency",
 			pid:      "5",
 			cid:      "4",
-			experr:   fmt.Errorf("cannot add dependency %w", CyclicDependencyErr),
+			experr:   CyclicDependencyErr,
 			wantErr:  true,
 		},
 	}
@@ -96,7 +97,7 @@ func TestAddDependency(t *testing.T) {
 
 			if tt.wantErr && got == nil {
 				t.Errorf("not got any error exp:%v got %v", tt.experr, got)
-				if tt.experr.Error() != got.Error() {
+				if tt.experr.Error() != errors.Cause(got).Error() {
 					t.Errorf("dependency not added properly exp: %v got: %v", tt.experr, got)
 				}
 			}
@@ -204,10 +205,10 @@ func TestCheckAscendentsAndDescendents(t *testing.T) {
 		{
 			testname: "get ancestor and descendants of a node that not exists",
 			id:       "60",
-			aerr:     fmt.Errorf("cannot find ancestors %w", NodeNotFoundErr),
-			derr:     fmt.Errorf("cannot find descendants %w", NodeNotFoundErr),
-			perr:     fmt.Errorf("cannot find parents %w", NodeNotFoundErr),
-			cerr:     fmt.Errorf("cannot find children %w", NodeNotFoundErr),
+			aerr:     NodeNotFoundErr,
+			derr:     NodeNotFoundErr,
+			perr:     NodeNotFoundErr,
+			cerr:     NodeNotFoundErr,
 			wantErr:  true,
 			asc:      []data{mp9, mp8},
 			dsc:      []data{},
@@ -222,7 +223,7 @@ func TestCheckAscendentsAndDescendents(t *testing.T) {
 		gotPar, err2 := Parents(tt.id)
 		gotChd, err3 := Children(tt.id)
 
-		if tt.wantErr && err1.Error() != tt.aerr.Error() && err.Error() != tt.derr.Error() && err2.Error() != tt.perr.Error() && err3.Error() != tt.cerr.Error() {
+		if tt.wantErr && errors.Cause(err1).Error() != tt.aerr.Error() && errors.Cause(err).Error() != tt.derr.Error() && errors.Cause(err2).Error() != tt.perr.Error() && errors.Cause(err3).Error() != tt.cerr.Error() {
 			t.Errorf("not got right result exp:%v got:%v", err, tt.aerr)
 		}
 
@@ -258,25 +259,42 @@ func TestDeleteNode(t *testing.T) {
 		testname string
 		id       string
 		msg      string
+		wantErr  error
 	}{
 		{
 			testname: "node deleted",
 			id:       "18",
 			msg:      "node deleted successfuly",
+			wantErr:  nil,
 		},
 		{
 			testname: "node does not exists",
 			id:       "18",
-			msg:      "node does not exists",
+			msg:      "",
+			wantErr:  NodeNotFoundErr,
 		},
 	}
 
 	for _, tt := range test {
 		t.Run(tt.testname, func(t *testing.T) {
-			got := DeleteNode(tt.id)
-			if got[0]["message"] != tt.msg {
-				t.Errorf("not deleted exp: %v got: %v", tt.msg, got)
+			got, err := DeleteNode(tt.id)
+			if err != nil && tt.wantErr == nil {
+				t.Errorf("exp %v got %v as error", tt.wantErr, err)
 			}
+			if tt.wantErr != nil {
+				if err == nil {
+					t.Errorf("exp %v got %v as error", tt.wantErr, err)
+				} else {
+					if tt.wantErr.Error() != errors.Cause(err).Error() {
+						t.Errorf("exp %v got %v as error", tt.wantErr, err)
+					}
+				}
+			} else {
+				if got[0]["message"] != tt.msg {
+					t.Errorf("not deleted exp: %v got: %v", tt.msg, got)
+				}
+			}
+
 		})
 	}
 }
@@ -291,7 +309,10 @@ func TestDeleteDependency(t *testing.T) {
 		t.Errorf("node cant be added")
 	}
 
-	AddDependency("17", "18")
+	_, err = AddDependency("17", "19")
+	if err != nil {
+		t.Errorf("dependency cant be added")
+	}
 
 	var test = []struct {
 		testname string
@@ -312,25 +333,28 @@ func TestDeleteDependency(t *testing.T) {
 			pid:      "20",
 			cid:      "17",
 			msg:      "parent node does not exists",
-			wantErr:  fmt.Errorf("cannot remove dependency %w", NodeNotFoundErr),
+			wantErr:  NodeNotFoundErr,
 		},
 		{
 			testname: "node does not exists",
 			pid:      "17",
 			cid:      "27",
 			msg:      "child node does not exists",
-			wantErr:  fmt.Errorf("cannot remove dependency %w", NodeNotFoundErr),
+			wantErr:  NodeNotFoundErr,
 		},
 	}
 
 	for _, tt := range test {
 		t.Run(tt.testname, func(t *testing.T) {
 			got, err := DeleteDependency(tt.pid, tt.cid)
+			if err != nil && tt.wantErr == nil {
+				t.Errorf("exp %v got %v as error", tt.wantErr, err)
+			}
 			if tt.wantErr != nil {
 				if err == nil {
 					t.Errorf("exp %v got %v as error", tt.wantErr, err)
 				} else {
-					if tt.wantErr.Error() != err.Error() {
+					if tt.wantErr.Error() != errors.Cause(err).Error() {
 						t.Errorf("exp %v got %v as error", tt.wantErr, err)
 					}
 				}

@@ -1,8 +1,7 @@
 package application
 
 import (
-	"fmt"
-
+	"github.com/pkg/errors"
 	"github.com/sankethkini/FamilyTreeInGo/model/graph"
 	"github.com/sankethkini/FamilyTreeInGo/model/node"
 )
@@ -27,7 +26,7 @@ func createMsg(msg string, body interface{}) []data {
 }
 
 //parse nodes to represnt in form of message
-func ParseNodes(nd ...node.INode) []data {
+func ParseNodes(nd ...*node.Node) []data {
 	var retmsg []data
 	for _, val := range nd {
 		mp := make(map[string]interface{})
@@ -43,7 +42,7 @@ func AddNode(name, id string) ([]data, error) {
 	_, ok := mygraph.GetNode(id)
 
 	if ok {
-		return nil, fmt.Errorf("node cannot be added %w", NodeExistsErr)
+		return nil, errors.Wrap(NodeExistsErr, "cannot add node")
 	}
 	mygraph.AddNode(id, name)
 
@@ -56,10 +55,9 @@ func Parents(id string) ([]data, error) {
 	curnode, ok := mygraph.GetNode(id)
 
 	if !ok {
-		return nil, fmt.Errorf("cannot find parents %w", NodeNotFoundErr)
+		return nil, errors.Wrap(NodeNotFoundErr, "cannot find parents")
 	}
 	par := curnode.GetParents()
-
 	msg := ParseNodes(par...)
 	return msg, nil
 }
@@ -69,7 +67,7 @@ func Children(id string) ([]data, error) {
 	curnode, ok := mygraph.GetNode(id)
 
 	if !ok {
-		return nil, fmt.Errorf("cannot find children %w", NodeNotFoundErr)
+		return nil, errors.Wrap(NodeNotFoundErr, "cannot find children")
 	}
 	chd := curnode.GetChildren()
 	msg := ParseNodes(chd...)
@@ -81,12 +79,12 @@ func Ancestors(id string) ([]data, error) {
 	curnode, ok := mygraph.GetNode(id)
 
 	if !ok {
-		return nil, fmt.Errorf("cannot find ancestors %w", NodeNotFoundErr)
+		return nil, errors.Wrap(NodeNotFoundErr, "cannot find ancestors")
 	}
 
 	par := curnode.GetParents()
 	visited := make(map[string]bool)
-	var res []node.INode
+	var res []*node.Node
 	for _, val := range par {
 		getAncestors(val, visited, &res)
 	}
@@ -96,7 +94,7 @@ func Ancestors(id string) ([]data, error) {
 }
 
 //helper dfs to find all ancestors
-func getAncestors(cur node.INode, visited map[string]bool, res *[]node.INode) {
+func getAncestors(cur *node.Node, visited map[string]bool, res *[]*node.Node) {
 	if visited[cur.GetId()] {
 		return
 	}
@@ -115,12 +113,12 @@ func getAncestors(cur node.INode, visited map[string]bool, res *[]node.INode) {
 func Descendants(id string) ([]data, error) {
 	curnode, ok := mygraph.GetNode(id)
 	if !ok {
-		return nil, fmt.Errorf("cannot find descendants %w", NodeNotFoundErr)
+		return nil, errors.Wrap(NodeNotFoundErr, "cannot find descendants")
 	}
 
 	chd := curnode.GetChildren()
 	visited := make(map[string]bool)
-	var res []node.INode
+	var res []*node.Node
 	for _, val := range chd {
 		getDescendants(val, visited, &res)
 	}
@@ -130,7 +128,7 @@ func Descendants(id string) ([]data, error) {
 }
 
 //helper dfs to find descendants
-func getDescendants(cur node.INode, visited map[string]bool, res *[]node.INode) {
+func getDescendants(cur *node.Node, visited map[string]bool, res *[]*node.Node) {
 	if visited[cur.GetId()] {
 		return
 	}
@@ -146,22 +144,19 @@ func getDescendants(cur node.INode, visited map[string]bool, res *[]node.INode) 
 }
 
 //DeleteNode function deletes the node
-func DeleteNode(id string) []data {
-	_, ok := mygraph.GetNode(id)
-
-	if !ok {
-		msg := createMsg("message", "node does not exists")
-		return msg
-	}
+func DeleteNode(id string) ([]data, error) {
 
 	for _, val := range mygraph.AllNodes() {
 		val.RemoveChild(id)
 		val.RemoveParent(id)
 	}
-	mygraph.RemoveNode(id)
+	err := mygraph.RemoveNode(id)
+	if err != nil {
+		return nil, errors.Wrap(err, "cannot delete node ")
+	}
 
 	msg := createMsg("message", "node deleted successfuly")
-	return msg
+	return msg, nil
 }
 
 //DeleteDependency function deletes dependency between two nodes
@@ -169,7 +164,7 @@ func DeleteDependency(parentId string, childId string) ([]data, error) {
 
 	err := mygraph.RemoveDependency(parentId, childId)
 	if err != nil {
-		return nil, fmt.Errorf("cannot remove dependency %w", err)
+		return nil, errors.Wrap(err, "cannot remove dependency")
 	}
 
 	msg := createMsg("message", "dependency deleted successfuly")
@@ -180,7 +175,7 @@ func DeleteDependency(parentId string, childId string) ([]data, error) {
 func checkCycle(parentId, childId string) bool {
 	pnode, _ := mygraph.GetNode(parentId)
 	visited := make(map[string]bool)
-	var res []node.INode
+	var res []*node.Node
 	getAncestors(pnode, visited, &res)
 
 	for _, val := range res {
@@ -196,14 +191,17 @@ func AddDependency(parentId, childId string) ([]data, error) {
 
 	err := mygraph.AddDependency(parentId, childId)
 	if err != nil {
-		return nil, fmt.Errorf("cannot add dependency %w", err)
+		return nil, errors.Wrap(err, "cannot add dependency")
 	}
 
 	if checkCycle(parentId, childId) {
-		return nil, fmt.Errorf("cannot add dependency %w", CyclicDependencyErr)
+		return nil, errors.Wrap(CyclicDependencyErr, "cannot add dependency")
 	}
 
-	mygraph.AddDependency(parentId, childId)
+	err = mygraph.AddDependency(parentId, childId)
+	if err != nil {
+		return nil, errors.Wrap(err, "cannot add dependency")
+	}
 
 	msg := createMsg("message", "dependency added successfuly")
 	return msg, nil
