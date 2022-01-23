@@ -107,13 +107,19 @@ func addNewDependency() {
 
 func deleteNode() {
 	id := nodeIdInput()
-	msg := application.DeleteNode(id)
+	msg, err := application.DeleteNode(id)
+	if err != nil {
+		fmt.Println(err)
+	}
 	displayMessage(msg...)
 }
 
 func deleteDependency() {
 	parentId, childId := dependencyInput()
-	msg := application.DeleteDependency(parentId, childId)
+	msg, err := application.DeleteDependency(parentId, childId)
+	if err != nil {
+		fmt.Println(err)
+	}
 	displayMessage(msg...)
 }
 
