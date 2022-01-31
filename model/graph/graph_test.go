@@ -1,6 +1,7 @@
 package graph
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
 
@@ -16,8 +17,7 @@ type format struct {
 }
 
 func TestAddGraph(t *testing.T) {
-
-	var tests = []format{
+	tests := []format{
 		{
 			testname: "adding node to graph",
 			id:       "1",
@@ -43,8 +43,7 @@ func TestAddGraph(t *testing.T) {
 }
 
 func TestRemoveGraph(t *testing.T) {
-
-	var tests = []struct {
+	tests := []struct {
 		testname string
 		id       string
 		name     string
@@ -61,7 +60,7 @@ func TestRemoveGraph(t *testing.T) {
 			testname: "remove node from graph which not exits",
 			id:       "1",
 			name:     "one",
-			want:     NodeNotFoundErr,
+			want:     ErrNodeNotFound,
 		},
 	}
 	mygraph := NewGraph()
@@ -69,21 +68,19 @@ func TestRemoveGraph(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.testname, func(t *testing.T) {
 			got := mygraph.RemoveNode(tt.id)
-
-			if got != tt.want {
-				t.Errorf("node not removed exp:%v got %v", got, tt.want)
+			if !checkErrorsEquality(tt.want, got) {
+				t.Errorf("expected %v got %v", tt.want, got)
 			}
 		})
 	}
 }
 
 func TestAllNodes(t *testing.T) {
-
 	mygraph := NewGraph()
 	node1 := mygraph.AddNode("1", "1")
 	node2 := mygraph.AddNode("2", "2")
 
-	var tests = []struct {
+	tests := []struct {
 		testname string
 		nodes    []*node.Node
 	}{
@@ -97,72 +94,61 @@ func TestAllNodes(t *testing.T) {
 		t.Run(tt.testname, func(t *testing.T) {
 			got := mygraph.AllNodes()
 
-			for i := range got {
-				if got[i] != tt.nodes[i] {
-					t.Errorf("incorrect exp:%v got:%v", tt.nodes, got)
-				}
+			if len(got) != len(tt.nodes) {
+				t.Errorf("expected %v got %v", tt.nodes, got)
 			}
 		})
 	}
 }
 
 func TestAddDep(t *testing.T) {
-
 	mygraph := NewGraph()
 	node1 := mygraph.AddNode("1", "1")
 	node2 := mygraph.AddNode("2", "2")
 
-	var tests = []struct {
+	tests := []struct {
 		testname string
 		parNodes []*node.Node
 		chdNodes []*node.Node
-		parId    string
-		chdId    string
+		parID    string
+		chdID    string
 		wantErr  error
 	}{
 		{
 			testname: "add dependency",
-			parId:    "1",
-			chdId:    "2",
+			parID:    "1",
+			chdID:    "2",
 			parNodes: []*node.Node{node1},
 			chdNodes: []*node.Node{node2},
 			wantErr:  nil,
 		},
 		{
 			testname: "add dependency parent node not exits",
-			parId:    "3",
-			chdId:    "2",
+			parID:    "3",
+			chdID:    "2",
 			parNodes: []*node.Node{},
 			chdNodes: []*node.Node{},
-			wantErr:  NodeNotFoundErr,
+			wantErr:  ErrNodeNotFound,
 		},
 		{
 			testname: "add dependency",
-			parId:    "1",
-			chdId:    "3",
+			parID:    "1",
+			chdID:    "3",
 			parNodes: []*node.Node{},
 			chdNodes: []*node.Node{},
-			wantErr:  NodeNotFoundErr,
+			wantErr:  ErrNodeNotFound,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.testname, func(t *testing.T) {
-
-			err := mygraph.AddDependency(tt.parId, tt.chdId)
-			if err != nil && tt.wantErr == nil {
-				t.Errorf("exp %v got %v as error", tt.wantErr, err)
+			err := mygraph.AddDependency(tt.parID, tt.chdID)
+			eq := checkErrorsEquality(tt.wantErr, err)
+			if !eq {
+				t.Errorf("expected error %v got %v", tt.wantErr, err)
 			}
-			if tt.wantErr != nil {
-				if err == nil {
-					t.Errorf("exp %v got %v as error", tt.wantErr, err)
-				} else {
-					if tt.wantErr.Error() != err.Error() {
-						t.Errorf("exp %v got %v as error", tt.wantErr, err)
-					}
-				}
 
-			} else {
+			if tt.wantErr == nil {
 				gotPar := node2.GetParents()
 				gotChd := node1.GetChildren()
 				for i := range gotPar {
@@ -176,73 +162,79 @@ func TestAddDep(t *testing.T) {
 					}
 				}
 			}
-
 		})
 	}
 }
 
-func TestRemoveDep(t *testing.T) {
+func checkErrorsEquality(err1 error, err2 error) bool {
+	if err2 != nil && err1 == nil {
+		fmt.Println(2)
+		return false
+	}
+	if err1 != nil {
+		if err2 == nil {
+			fmt.Println(2)
+			return false
+		} else if err1.Error() != err2.Error() {
+			return false
+		}
+	}
+	return true
+}
 
+func TestRemoveDep(t *testing.T) {
 	mygraph := NewGraph()
 	node1 := mygraph.AddNode("1", "1")
 	node2 := mygraph.AddNode("2", "2")
 
-	err := mygraph.AddDependency(node1.GetId(), node2.GetId())
+	err := mygraph.AddDependency(node1.GetID(), node2.GetID())
 	if err != nil {
 		t.Errorf("cannot add dependency %v", err)
 	}
 
-	var tests = []struct {
+	tests := []struct {
 		testname string
-		parId    string
-		chdId    string
+		parID    string
+		chdID    string
 		parNodes []*node.Node
 		chdNodes []*node.Node
 		wantErr  error
 	}{
 		{
 			testname: "remove dependency",
-			parId:    "1",
-			chdId:    "2",
+			parID:    "1",
+			chdID:    "2",
 			parNodes: []*node.Node{},
 			chdNodes: []*node.Node{},
 			wantErr:  nil,
 		},
 		{
-			testname: "remove dependency",
-			parId:    "3",
-			chdId:    "2",
+			testname: "remove dependency parent node not exists",
+			parID:    "3",
+			chdID:    "2",
 			parNodes: []*node.Node{},
 			chdNodes: []*node.Node{},
-			wantErr:  NodeNotFoundErr,
+			wantErr:  ErrNodeNotFound,
 		},
 		{
-			testname: "remove dependency",
-			parId:    "1",
-			chdId:    "3",
+			testname: "remove dependency child node not exits",
+			parID:    "1",
+			chdID:    "3",
 			parNodes: []*node.Node{},
 			chdNodes: []*node.Node{},
-			wantErr:  NodeNotFoundErr,
+			wantErr:  ErrNodeNotFound,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.testname, func(t *testing.T) {
-			err := mygraph.RemoveDependency(tt.parId, tt.chdId)
-
-			if err != nil && tt.wantErr == nil {
-				t.Errorf("exp %v got %v as error", tt.wantErr, err)
+			err := mygraph.RemoveDependency(tt.parID, tt.chdID)
+			eq := checkErrorsEquality(tt.wantErr, err)
+			if !eq {
+				t.Errorf("expected error %v got %v", tt.wantErr, err)
 			}
-			if tt.wantErr != nil {
-				if err == nil {
-					t.Errorf("exp %v got %v as error", tt.wantErr, err)
-				} else {
-					if tt.wantErr.Error() != err.Error() {
-						t.Errorf("exp %v got %v as error", tt.wantErr, err)
-					}
-				}
 
-			} else {
+			if tt.wantErr == nil {
 				gotPar := node2.GetParents()
 				gotChd := node1.GetChildren()
 				for i := range gotPar {
@@ -256,7 +248,6 @@ func TestRemoveDep(t *testing.T) {
 					}
 				}
 			}
-
 		})
 	}
 }

@@ -9,7 +9,8 @@ import (
 )
 
 func TestAddNodes(t *testing.T) {
-	var test = []struct {
+	app := NewApp()
+	test := []struct {
 		testname string
 		name     string
 		id       string
@@ -27,14 +28,13 @@ func TestAddNodes(t *testing.T) {
 			testname: "adding node which exists",
 			name:     "one",
 			id:       "1",
-			experr:   NodeExistsErr,
+			experr:   ErrNodeExists,
 			wantErr:  true,
 		},
 	}
-
 	for _, tt := range test {
 		t.Run(tt.testname, func(t *testing.T) {
-			_, got := AddNode(tt.name, tt.id)
+			_, got := app.AddNode(tt.name, tt.id)
 
 			if tt.wantErr && got == nil {
 				t.Errorf("not got any error exp:%v got %v", tt.experr, got)
@@ -47,21 +47,22 @@ func TestAddNodes(t *testing.T) {
 }
 
 func TestAddDependency(t *testing.T) {
-	_, err := AddNode("four", "4")
+	app := NewApp()
+	_, err := app.AddNode("four", "4")
 	if err != nil {
 		t.Errorf("node cant be added")
 	}
-	_, err = AddNode("five", "5")
+	_, err = app.AddNode("five", "5")
 	if err != nil {
 		t.Errorf("node cant be added")
 	}
-	_, err = AddNode("six", "6")
+	_, err = app.AddNode("six", "6")
 
 	if err != nil {
 		t.Errorf("node cant be added")
 	}
 
-	var test = []struct {
+	test := []struct {
 		testname string
 		pid      string
 		cid      string
@@ -79,21 +80,21 @@ func TestAddDependency(t *testing.T) {
 			testname: "parent node not exits",
 			pid:      "10",
 			cid:      "5",
-			experr:   NodeNotFoundErr,
+			experr:   ErrNodeNotFound,
 			wantErr:  true,
 		},
 		{
 			testname: "cyclic dependency",
 			pid:      "5",
 			cid:      "4",
-			experr:   CyclicDependencyErr,
+			experr:   ErrCyclicDependency,
 			wantErr:  true,
 		},
 	}
 
 	for _, tt := range test {
 		t.Run(tt.testname, func(t *testing.T) {
-			_, got := AddDependency(tt.pid, tt.cid)
+			_, got := app.AddDependency(tt.pid, tt.cid)
 
 			if tt.wantErr && got == nil {
 				t.Errorf("not got any error exp:%v got %v", tt.experr, got)
@@ -118,39 +119,24 @@ func checkEqual(d1, d2 []data) bool {
 	sort.Strings(ids2)
 	return reflect.DeepEqual(ids1, ids2)
 }
+
 func TestCheckAscendentsAndDescendents(t *testing.T) {
-	_, err := AddNode("eight", "8")
-	if err != nil {
-		t.Errorf("node cant be added")
-	}
-	_, err = AddNode("nine", "9")
-	if err != nil {
-		t.Errorf("node cant be added")
-	}
-	_, err = AddNode("ten", "10")
-	if err != nil {
-		t.Errorf("node cant be added")
-	}
+	app := NewApp()
 
-	_, err = AddDependency("8", "9")
+	err := AddNodeAndDepend(app)
 	if err != nil {
-		t.Errorf("depend cant be added")
+		t.Error(err)
 	}
-	_, err = AddDependency("9", "10")
-	if err != nil {
-		t.Errorf("depend cant be added")
-	}
-
-	n, _ := mygraph.GetNode("8")
+	n, _ := app.mygraph.GetNode("8")
 	mp8 := ParseNodes(n)[0]
 
-	n, _ = mygraph.GetNode("9")
+	n, _ = app.mygraph.GetNode("9")
 	mp9 := ParseNodes(n)[0]
 
-	n, _ = mygraph.GetNode("10")
+	n, _ = app.mygraph.GetNode("10")
 	mp10 := ParseNodes(n)[0]
 
-	var tests = []struct {
+	tests := []struct {
 		testname string
 		id       string
 		aerr     error
@@ -205,10 +191,10 @@ func TestCheckAscendentsAndDescendents(t *testing.T) {
 		{
 			testname: "get ancestor and descendants of a node that not exists",
 			id:       "60",
-			aerr:     NodeNotFoundErr,
-			derr:     NodeNotFoundErr,
-			perr:     NodeNotFoundErr,
-			cerr:     NodeNotFoundErr,
+			aerr:     ErrNodeNotFound,
+			derr:     ErrNodeNotFound,
+			perr:     ErrNodeNotFound,
+			cerr:     ErrNodeNotFound,
 			wantErr:  true,
 			asc:      []data{mp9, mp8},
 			dsc:      []data{},
@@ -218,10 +204,10 @@ func TestCheckAscendentsAndDescendents(t *testing.T) {
 	}
 
 	for i, tt := range tests {
-		gotAsc, err1 := Ancestors(tt.id)
-		gotDsc, err := Descendants(tt.id)
-		gotPar, err2 := Parents(tt.id)
-		gotChd, err3 := Children(tt.id)
+		gotAsc, err1 := app.Ancestors(tt.id)
+		gotDsc, err := app.Descendants(tt.id)
+		gotPar, err2 := app.Parents(tt.id)
+		gotChd, err3 := app.Children(tt.id)
 
 		if tt.wantErr && errors.Cause(err1).Error() != tt.aerr.Error() && errors.Cause(err).Error() != tt.derr.Error() && errors.Cause(err2).Error() != tt.perr.Error() && errors.Cause(err3).Error() != tt.cerr.Error() {
 			t.Errorf("not got right result exp:%v got:%v", err, tt.aerr)
@@ -245,17 +231,43 @@ func TestCheckAscendentsAndDescendents(t *testing.T) {
 		if !checkEqual(tt.chd, gotChd) {
 			t.Errorf("not got right children exp:%v got:%v", tt.dsc, gotDsc)
 		}
-
 	}
 }
 
+func AddNodeAndDepend(app *MyApp) error {
+	_, err := app.AddNode("eight", "8")
+	if err != nil {
+		return err
+	}
+	_, err = app.AddNode("nine", "9")
+	if err != nil {
+		return err
+	}
+	_, err = app.AddNode("ten", "10")
+	if err != nil {
+		return err
+	}
+
+	_, err = app.AddDependency("8", "9")
+	if err != nil {
+		return err
+	}
+	_, err = app.AddDependency("9", "10")
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func TestDeleteNode(t *testing.T) {
-	_, err := AddNode("one8", "18")
+	app := NewApp()
+
+	_, err := app.AddNode("one8", "18")
 	if err != nil {
 		t.Errorf("node cant be added")
 	}
 
-	var test = []struct {
+	test := []struct {
 		testname string
 		id       string
 		msg      string
@@ -264,57 +276,56 @@ func TestDeleteNode(t *testing.T) {
 		{
 			testname: "node deleted",
 			id:       "18",
-			msg:      "node deleted successfuly",
+			msg:      "node deleted successfully",
 			wantErr:  nil,
 		},
 		{
 			testname: "node does not exists",
 			id:       "18",
 			msg:      "",
-			wantErr:  NodeNotFoundErr,
+			wantErr:  ErrNodeNotFound,
 		},
 	}
 
 	for _, tt := range test {
 		t.Run(tt.testname, func(t *testing.T) {
-			got, err := DeleteNode(tt.id)
+			got, err := app.DeleteNode(tt.id)
 			if err != nil && tt.wantErr == nil {
 				t.Errorf("exp %v got %v as error", tt.wantErr, err)
 			}
 			if tt.wantErr != nil {
 				if err == nil {
 					t.Errorf("exp %v got %v as error", tt.wantErr, err)
-				} else {
-					if tt.wantErr.Error() != errors.Cause(err).Error() {
-						t.Errorf("exp %v got %v as error", tt.wantErr, err)
-					}
+				} else if tt.wantErr.Error() != errors.Cause(err).Error() {
+					t.Errorf("exp %v got %v as error", tt.wantErr, err)
 				}
 			} else {
 				if got[0]["message"] != tt.msg {
 					t.Errorf("not deleted exp: %v got: %v", tt.msg, got)
 				}
 			}
-
 		})
 	}
 }
 
 func TestDeleteDependency(t *testing.T) {
-	_, err := AddNode("one7", "17")
+	app := NewApp()
+
+	_, err := app.AddNode("one7", "17")
 	if err != nil {
 		t.Errorf("node cant be added")
 	}
-	_, err = AddNode("one9", "19")
+	_, err = app.AddNode("one9", "19")
 	if err != nil {
 		t.Errorf("node cant be added")
 	}
 
-	_, err = AddDependency("17", "19")
+	_, err = app.AddDependency("17", "19")
 	if err != nil {
 		t.Errorf("dependency cant be added")
 	}
 
-	var test = []struct {
+	test := []struct {
 		testname string
 		pid      string
 		cid      string
@@ -325,7 +336,7 @@ func TestDeleteDependency(t *testing.T) {
 			testname: "node deleted",
 			pid:      "17",
 			cid:      "19",
-			msg:      "dependency deleted successfuly",
+			msg:      "dependency deleted successfully",
 			wantErr:  nil,
 		},
 		{
@@ -333,37 +344,32 @@ func TestDeleteDependency(t *testing.T) {
 			pid:      "20",
 			cid:      "17",
 			msg:      "parent node does not exists",
-			wantErr:  NodeNotFoundErr,
+			wantErr:  ErrNodeNotFound,
 		},
 		{
 			testname: "node does not exists",
 			pid:      "17",
 			cid:      "27",
 			msg:      "child node does not exists",
-			wantErr:  NodeNotFoundErr,
+			wantErr:  ErrNodeNotFound,
 		},
 	}
 
 	for _, tt := range test {
 		t.Run(tt.testname, func(t *testing.T) {
-			got, err := DeleteDependency(tt.pid, tt.cid)
+			got, err := app.DeleteDependency(tt.pid, tt.cid)
 			if err != nil && tt.wantErr == nil {
 				t.Errorf("exp %v got %v as error", tt.wantErr, err)
 			}
 			if tt.wantErr != nil {
 				if err == nil {
 					t.Errorf("exp %v got %v as error", tt.wantErr, err)
-				} else {
-					if tt.wantErr.Error() != errors.Cause(err).Error() {
-						t.Errorf("exp %v got %v as error", tt.wantErr, err)
-					}
+				} else if tt.wantErr.Error() != errors.Cause(err).Error() {
+					t.Errorf("exp %v got %v as error", tt.wantErr, err)
 				}
-			} else {
-				if got[0]["message"] != tt.msg {
-					t.Errorf("not deleted exp: %v got: %v", tt.msg, got)
-				}
+			} else if got[0]["message"] != tt.msg {
+				t.Errorf("not deleted exp: %v got: %v", tt.msg, got)
 			}
-
 		})
 	}
 }

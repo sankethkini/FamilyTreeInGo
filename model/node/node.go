@@ -19,18 +19,18 @@ type Node struct {
 }
 
 func (n *Node) AddChild(c *Node) bool {
-	if _, ok := n.children[c.GetId()]; ok {
+	if _, ok := n.children[c.GetID()]; ok {
 		return false
 	}
-	n.children[c.GetId()] = c
+	n.children[c.GetID()] = c
 	return true
 }
 
 func (n *Node) AddParent(c *Node) bool {
-	if _, ok := n.parents[c.GetId()]; ok {
+	if _, ok := n.parents[c.GetID()]; ok {
 		return false
 	}
-	n.parents[c.GetId()] = c
+	n.parents[c.GetID()] = c
 	return true
 }
 
@@ -51,7 +51,7 @@ func (n *Node) RemoveParent(c string) bool {
 }
 
 func (n *Node) GetParents() []*Node {
-	var p []*Node
+	p := make([]*Node, 0, len(n.parents))
 	for _, val := range n.parents {
 		p = append(p, val)
 	}
@@ -59,16 +59,17 @@ func (n *Node) GetParents() []*Node {
 }
 
 func (n *Node) GetChildren() []*Node {
-	var p []*Node
+	p := make([]*Node, 0, len(n.children))
 	for _, val := range n.children {
 		p = append(p, val)
 	}
 	return p
 }
 
-func (n *Node) GetId() string {
+func (n *Node) GetID() string {
 	return n.id
 }
+
 func (n *Node) GetName() string {
 	return n.name
 }

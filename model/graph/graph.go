@@ -6,15 +6,15 @@ import (
 	"github.com/sankethkini/FamilyTreeInGo/model/node"
 )
 
-var NodeNotFoundErr = errors.New("node not found")
+var ErrNodeNotFound = errors.New("node not found")
 
 type IGraph interface {
 	AddNode(id, name string) *node.Node
 	RemoveNode(id string) error
 	AllNodes() []*node.Node
 	GetNode(id string) (*node.Node, bool)
-	AddDependency(parentId, childId string) error
-	RemoveDependency(parentId, childId string) error
+	AddDependency(parentID, childID string) error
+	RemoveDependency(parentID, childID string) error
 }
 
 type graph struct {
@@ -22,12 +22,13 @@ type graph struct {
 }
 
 func (g *graph) AllNodes() []*node.Node {
-	var res []*node.Node
+	res := make([]*node.Node, 0, len(g.nodes))
 	for _, val := range g.nodes {
 		res = append(res, val)
 	}
 	return res
 }
+
 func (g *graph) AddNode(id, name string) *node.Node {
 	nd := node.NewNode(id, name)
 	g.nodes[id] = nd
@@ -42,42 +43,42 @@ func (g *graph) GetNode(id string) (*node.Node, bool) {
 func (g *graph) RemoveNode(id string) error {
 	_, ok := g.nodes[id]
 	if !ok {
-		return NodeNotFoundErr
+		return ErrNodeNotFound
 	}
 	delete(g.nodes, id)
 	return nil
 }
 
-func (g *graph) AddDependency(parentId, childId string) error {
-	_, ok := g.nodes[parentId]
+func (g *graph) AddDependency(parentID, childID string) error {
+	_, ok := g.nodes[parentID]
 	if !ok {
-		return NodeNotFoundErr
+		return ErrNodeNotFound
 	}
-	_, ok = g.nodes[childId]
+	_, ok = g.nodes[childID]
 	if !ok {
-		return NodeNotFoundErr
+		return ErrNodeNotFound
 	}
-	parentNode := g.nodes[parentId]
-	childNode := g.nodes[childId]
+	parentNode := g.nodes[parentID]
+	childNode := g.nodes[childID]
 	parentNode.AddChild(childNode)
 	childNode.AddParent(parentNode)
 	return nil
 }
 
-func (g *graph) RemoveDependency(parentId, childId string) error {
-	_, ok := g.nodes[parentId]
+func (g *graph) RemoveDependency(parentID, childID string) error {
+	_, ok := g.nodes[parentID]
 	if !ok {
-		return NodeNotFoundErr
+		return ErrNodeNotFound
 	}
-	_, ok = g.nodes[childId]
+	_, ok = g.nodes[childID]
 	if !ok {
-		return NodeNotFoundErr
+		return ErrNodeNotFound
 	}
 
-	parentNode := g.nodes[parentId]
-	childNode := g.nodes[childId]
-	parentNode.RemoveChild(childId)
-	childNode.RemoveParent(parentId)
+	parentNode := g.nodes[parentID]
+	childNode := g.nodes[childID]
+	parentNode.RemoveChild(childID)
+	childNode.RemoveParent(parentID)
 	return nil
 }
 

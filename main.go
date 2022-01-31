@@ -5,8 +5,5 @@ import (
 )
 
 func main() {
-	for {
-		ui.MenuForUser()
-	}
-
+	ui.Start()
 }

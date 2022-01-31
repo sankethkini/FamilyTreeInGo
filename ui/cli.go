@@ -7,7 +7,14 @@ import (
 	"github.com/sankethkini/FamilyTreeInGo/application"
 )
 
-func MenuForUser() {
+func Start() {
+	app := application.NewApp()
+	for {
+		MenuForUser(app)
+	}
+}
+
+func MenuForUser(app *application.MyApp) {
 	fmt.Println("<--------------------------->")
 	fmt.Println("choose the operation")
 	fmt.Println("1. Add new node")
@@ -22,41 +29,40 @@ func MenuForUser() {
 	fmt.Println("enter your option")
 	var option int
 	fmt.Scanf("%d", &option)
-	selectApi(option)
+	selectAPI(option, app)
 }
 
-func selectApi(option int) {
-
+func selectAPI(option int, app *application.MyApp) {
 	switch option {
 	case 1:
-		addNewNode()
+		addNewNode(app)
 
 	case 2:
-		addNewDependency()
+		addNewDependency(app)
 
 	case 3:
-		deleteNode()
+		deleteNode(app)
 
 	case 4:
-		deleteDependency()
+		deleteDependency(app)
 
 	case 5:
-		getParents()
+		getParents(app)
 
 	case 6:
-		getChildren()
+		getChildren(app)
 
 	case 7:
-		getAncestors()
+		getAncestors(app)
 
 	case 8:
-		getDescendants()
+		getDescendants(app)
 
 	case 9:
 		os.Exit(1)
 
 	default:
-		MenuForUser()
+		fmt.Println("enter the correct option")
 	}
 }
 
@@ -68,27 +74,27 @@ func displayMessage(msg ...map[string]interface{}) {
 	}
 }
 
-func nodeIdInput() (id string) {
+func nodeIDInput() (id string) {
 	fmt.Println("enter the node id")
 	fmt.Scanf("%s", &id)
 	return
 }
 
-func dependencyInput() (parentId string, childId string) {
+func dependencyInput() (parentID string, childID string) {
 	fmt.Println("Enter the parent id")
-	fmt.Scanf("%s", &parentId)
+	fmt.Scanf("%s", &parentID)
 	fmt.Println("Enter the child id")
-	fmt.Scanf("%s", &childId)
+	fmt.Scanf("%s", &childID)
 	return
 }
 
-func addNewNode() {
+func addNewNode(app *application.MyApp) {
 	var name string
-	id := nodeIdInput()
+	id := nodeIDInput()
 	fmt.Println("enter the name")
 	fmt.Scanf("%s", &name)
 	fmt.Println(name)
-	msg, err := application.AddNode(name, id)
+	msg, err := app.AddNode(name, id)
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -96,63 +102,63 @@ func addNewNode() {
 	displayMessage(msg...)
 }
 
-func addNewDependency() {
-	parentId, childId := dependencyInput()
-	msg, err := application.AddDependency(parentId, childId)
+func addNewDependency(app *application.MyApp) {
+	parentID, childID := dependencyInput()
+	msg, err := app.AddDependency(parentID, childID)
 	if err != nil {
 		fmt.Println(err)
 	}
 	displayMessage(msg...)
 }
 
-func deleteNode() {
-	id := nodeIdInput()
-	msg, err := application.DeleteNode(id)
+func deleteNode(app *application.MyApp) {
+	id := nodeIDInput()
+	msg, err := app.DeleteNode(id)
 	if err != nil {
 		fmt.Println(err)
 	}
 	displayMessage(msg...)
 }
 
-func deleteDependency() {
-	parentId, childId := dependencyInput()
-	msg, err := application.DeleteDependency(parentId, childId)
+func deleteDependency(app *application.MyApp) {
+	parentID, childID := dependencyInput()
+	msg, err := app.DeleteDependency(parentID, childID)
 	if err != nil {
 		fmt.Println(err)
 	}
 	displayMessage(msg...)
 }
 
-func getParents() {
-	id := nodeIdInput()
-	msg, err := application.Parents(id)
+func getParents(app *application.MyApp) {
+	id := nodeIDInput()
+	msg, err := app.Parents(id)
 	if err != nil {
 		fmt.Println(err)
 	}
 	displayMessage(msg...)
 }
 
-func getChildren() {
-	id := nodeIdInput()
-	msg, err := application.Children(id)
+func getChildren(app *application.MyApp) {
+	id := nodeIDInput()
+	msg, err := app.Children(id)
 	if err != nil {
 		fmt.Println(err)
 	}
 	displayMessage(msg...)
 }
 
-func getAncestors() {
-	id := nodeIdInput()
-	msg, err := application.Ancestors(id)
+func getAncestors(app *application.MyApp) {
+	id := nodeIDInput()
+	msg, err := app.Ancestors(id)
 	if err != nil {
 		fmt.Println(err)
 	}
 	displayMessage(msg...)
 }
 
-func getDescendants() {
-	id := nodeIdInput()
-	msg, err := application.Descendants(id)
+func getDescendants(app *application.MyApp) {
+	id := nodeIDInput()
+	msg, err := app.Descendants(id)
 	if err != nil {
 		fmt.Println(err)
 	}
